@@ -3,45 +3,38 @@ pragma solidity ^0.8.20;
 
 import {ITrap} from "drosera-contracts/interfaces/ITrap.sol";
 
+interface IBoolWordRegistry {
+    function getWords(address trap) external view returns (bytes32[] memory);
+}
+
 contract MalformedTrap is ITrap {
-    constructor() {}
-    
+    address public constant REGISTRY = 0x0000000000000000000000000000000000000000; // replace with registry address
+
     function collect() external view returns (bytes memory) {
-        return abi.encode(msg.sender, block.timestamp);
+        bytes32[] memory words = IBoolWordRegistry(REGISTRY).getWords(address(this));
+        return abi.encode(words, block.number);
     }
-    
-    function shouldRespond(bytes[] calldata data) external pure returns (bool, bytes memory) {
-        bool suspicious = false;
-        bytes memory responseData = "";
-        
-        for (uint256 i = 0; i < data.length; i++) {
-            bytes calldata item = data[i];
-            
-            if (item.length >= 32) {
-                bool hasNonZeroBytes = false;
-                uint256 lastByteValue = 0;
-                
-                for (uint256 j = item.length - 32; j < item.length - 1; j++) {
-                    if (item[j] != 0) {
-                        hasNonZeroBytes = true;
-                        break;
-                    }
-                }
-                
-                lastByteValue = uint256(uint8(item[item.length - 1]));
-                
-                if (hasNonZeroBytes || lastByteValue > 1) {
-                    suspicious = true;
-                    responseData = abi.encode(
-                        "MALFORMED_BOOLEAN_DETECTED",
-                        lastByteValue,
-                        i
-                    );
-                    break;
+
+    function shouldRespond(bytes[] calldata data)
+        external
+        pure
+        returns (bool, bytes memory)
+    {
+        if (data.length == 0) return (false, "");
+        (bytes32[] memory words, uint256 blk) = abi.decode(data[0], (bytes32[], uint256));
+
+        for (uint256 i = 0; i < words.length; i++) {
+            bytes32 w = words[i];
+            uint8 last = uint8(w[31]);
+            if (last > 1) {
+                return (true, abi.encode("MALFORMED_BOOLEAN_DETECTED", w, i, blk));
+            }
+            for (uint256 j = 0; j < 31; j++) {
+                if (w[j] != 0x00) {
+                    return (true, abi.encode("MALFORMED_BOOLEAN_DETECTED", w, i, blk));
                 }
             }
         }
-        
-        return (suspicious, responseData);
+        return (false, "");
     }
 }
