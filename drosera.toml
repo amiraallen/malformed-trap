@@ -7,8 +7,8 @@ drosera_address = "0x91cB447BaFc6e0EA0F4Fe056F5a9b1F14bb06e5D"
 
 [traps.mytrap]
 path = "out/MalformedTrap.sol/MalformedTrap.json"
-response_contract = "0x603e8E5680b959bc87E4Fe2218c7c45afb5A78d6"
-response_function = "processResponse(bool,bytes)"
+response_contract = "0xF4CB720F025d5B79F6580b26895C105747BF5928"
+response_function = "handle(bytes)"
 cooldown_period_blocks = 33
 min_number_of_operators = 1
 max_number_of_operators = 2
